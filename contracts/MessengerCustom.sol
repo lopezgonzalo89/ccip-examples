@@ -17,6 +17,8 @@ import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-sol
 contract MessengerCustom is CCIPReceiver, OwnerIsCreator {
     // Custom errors to provide more descriptive revert messages.
     error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); // Used to make sure contract has enough balance.
+    error NothingToWithdraw(); // Used when trying to withdraw Ether but there's nothing to withdraw.
+    error FailedToWithdrawEth(address owner, address target, uint256 value); // Used when the withdrawal of Ether fails.
 
     // Event emitted when a message is sent to another chain.
     event MessageSent(
@@ -157,6 +159,21 @@ contract MessengerCustom is CCIPReceiver, OwnerIsCreator {
         returns (bytes32[] memory messageIds)
     {
         return (receivedMessageIds);
+    }
+
+    /// @notice Allows the contract owner to withdraw the entire balance of Ether from the contract.
+    /// @dev This function reverts if there are no funds to withdraw or if the transfer fails.
+    /// It should only be callable by the owner of the contract.
+    /// @param _beneficiary The address to which the Ether should be sent.
+    function withdraw(address _beneficiary) public onlyOwner {
+        uint256 amount = address(this).balance;
+
+        if (amount == 0) revert NothingToWithdraw();
+
+        // Attempt to send the funds, capturing the success status and discarding any return data
+        (bool sent, ) = _beneficiary.call{value: amount}("");
+
+        if (!sent) revert FailedToWithdrawEth(msg.sender, _beneficiary, amount);
     }
 
     /// @notice Fallback function to allow the contract to receive Ether.
