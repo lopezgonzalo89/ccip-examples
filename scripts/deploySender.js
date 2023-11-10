@@ -20,6 +20,8 @@ async function main() {
 
   console.log("-- Deploying --");
   console.log("Deployer address:", deployer.address);
+  console.log("Router Address: ", routerAddress);
+  console.log("Link Address: ", link);
   console.log("");
 
   const Sender = await hre.ethers.getContractFactory("Sender");
@@ -30,8 +32,6 @@ async function main() {
 
   console.log("-- Deployed --");
   console.log("Sender address:", sender.target);
-  console.log("Router Address: ", routerAddress);
-  console.log("Link Address: ", link);
   console.log("");
 
   console.log("-- Verifying --");

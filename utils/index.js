@@ -13,7 +13,7 @@ const getConfig = (network) => {
     case "fuji":
       return {
         routerAddress: "0x554472a2720e5e7d5d3c817529aba05eed5f82d8", // fuji
-        link: "0x0b9d5d9136855f6fec3c0993fee6e9ce8a2978463",
+        link: "0x0b9d5d9136855f6fec3c0993fee6e9ce8a297846",
       };
     case "arbitrum":
       return {
