@@ -7,37 +7,20 @@ import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.s
 import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
 import {IERC20} from "@chainlink/contracts-ccip/src/v0.8/vendor/openzeppelin-solidity/v4.8.0/token/ERC20/IERC20.sol";
 
-/**
- * THIS IS AN EXAMPLE CONTRACT THAT USES HARDCODED VALUES FOR CLARITY.
- * THIS IS AN EXAMPLE CONTRACT THAT USES UN-AUDITED CODE.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
+struct DappTransmissionInfo {
+    bytes dappTransmissionSender;
+    bytes dappTransmissionReceiver;
+    bytes32 dAppId;
+    bytes dappPayload;
+}
 
 /// @title - A simple messenger contract for sending/receving string data across chains.
 contract MessengerCustom is CCIPReceiver, OwnerIsCreator {
-    // Custom errors to provide more descriptive revert messages.
-    error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees); // Used to make sure contract has enough balance.
-    error NothingToWithdraw(); // Used when trying to withdraw Ether but there's nothing to withdraw.
-    error FailedToWithdrawEth(address owner, address target, uint256 value); // Used when the withdrawal of Ether fails.
+    error NotEnoughBalance(uint256 currentBalance, uint256 calculatedFees);
+    error NothingToWithdraw();
+    error FailedToWithdrawEth(address owner, address target, uint256 value);
 
-    // Event emitted when a message is sent to another chain.
-    event MessageSent(
-        bytes32 indexed messageId, // The unique ID of the CCIP message.
-        uint64 indexed destinationChainSelector, // The chain selector of the destination chain.
-        address receiver, // The address of the receiver on the destination chain.
-        string text, // The text being sent.
-        address feeToken, // the token address used to pay CCIP fees.
-        uint256 fees // The fees paid for sending the CCIP message.
-    );
-
-    // Event emitted when a message is received from another chain.
-    event MessageReceived(
-        bytes32 indexed messageId, // The unique ID of the CCIP message.
-        uint64 indexed sourceChainSelector, // The chain selector of the source chain.
-        address sender // The address of the sender from the source chain.
-    );
-
-    bytes32 private s_lastReceivedMessageId; // Store the last received messageId.
+    bytes32 private s_lastReceivedMessageId;
     bytes32[] private receivedMessageIds;
 
     IERC20 private s_linkToken;
@@ -93,16 +76,6 @@ contract MessengerCustom is CCIPReceiver, OwnerIsCreator {
         // Send the CCIP message through the router and store the returned CCIP message ID
         messageId = router.ccipSend(_destinationChainSelector, evm2AnyMessage);
 
-        // Emit an event with message details
-        emit MessageSent(
-            messageId,
-            _destinationChainSelector,
-            _receiver,
-            "_payload",
-            address(s_linkToken),
-            fees
-        );
-
         // Return the CCIP message ID
         return messageId;
     }
@@ -113,12 +86,6 @@ contract MessengerCustom is CCIPReceiver, OwnerIsCreator {
     ) internal override {
         s_lastReceivedMessageId = any2EvmMessage.messageId;
         receivedMessageIds.push(any2EvmMessage.messageId);
-
-        emit MessageReceived(
-            any2EvmMessage.messageId,
-            any2EvmMessage.sourceChainSelector, // fetch the source chain identifier (aka selector)
-            abi.decode(any2EvmMessage.sender, (address)) // abi-decoding of the sender address,
-        );
     }
 
     function _buildCCIPMessage(
