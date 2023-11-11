@@ -32,6 +32,51 @@ contract MessengerCustom is CCIPReceiver, OwnerIsCreator {
         s_linkToken = IERC20(_link);
     }
 
+    function transmit(
+        uint64 _destinationChainSelector,
+        address ccipTransmissionReceiver_,
+        bytes calldata receiver_,
+        bytes calldata dappTransmissionReceiver_,
+        address token_,
+        bytes32 dAppId_
+    ) external returns (bytes32 messageId) {
+        DappTransmissionInfo memory dappTransmissionInfo = DappTransmissionInfo(
+            abi.encodePacked(msg.sender),
+            dappTransmissionReceiver_,
+            dAppId_,
+            abi.encode( // Payload
+                uint256(0),
+                abi.encode(
+                    abi.encodePacked(msg.sender),
+                    receiver_,
+                    abi.encode( // action
+                        1,
+                        abi.encodePacked(token_),
+                        abi.encode(1, 3, "Link Token", "Link", 18)
+                    )
+                )
+            )
+        );
+
+        Client.EVM2AnyMessage memory evm2AnyMessage = _buildCCIPMessage(
+            ccipTransmissionReceiver_,
+            abi.encode(dappTransmissionInfo), // teleportPayload
+            address(s_linkToken)
+        );
+        IRouterClient router = IRouterClient(this.getRouter());
+
+        uint256 fees = router.getFee(_destinationChainSelector, evm2AnyMessage);
+
+        if (fees > s_linkToken.balanceOf(address(this)))
+            revert NotEnoughBalance(s_linkToken.balanceOf(address(this)), fees);
+
+        s_linkToken.approve(address(router), fees);
+
+        messageId = router.ccipSend(_destinationChainSelector, evm2AnyMessage);
+
+        return messageId;
+    }
+
     function sendMessagePayLINK(
         uint64 _destinationChainSelector,
         address _receiver,
