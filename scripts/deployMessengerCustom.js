@@ -13,7 +13,7 @@ async function main() {
 
   if (!routerAddress) {
     console.error(
-      "Usage: npx hardhat run scripts/deployMessenger.js --network localhost"
+      "Usage: npx hardhat run scripts/deployMessengerCustom.js --network localhost"
     );
     process.exit(1);
   }
